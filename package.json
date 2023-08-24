@@ -10,8 +10,14 @@
     "test": "jest"
   },
   "dependencies": {
+    "@jerryu/react-native-swipe-list-view": "^3.2.9",
+    "@react-native-async-storage/async-storage": "^1.19.2",
     "react": "18.2.0",
-    "react-native": "0.72.4"
+    "react-native": "0.72.4",
+    "react-native-gesture-handler": "^2.12.1",
+    "react-native-swipe-list-view": "^3.2.9",
+    "react-native-swipeable-list-view": "^0.1.2",
+    "react-native-toast-message": "^2.1.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

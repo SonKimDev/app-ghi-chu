@@ -1,10 +1,39 @@
-import { Button, FlatList, Modal, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import React , {useState} from 'react'
+import { Button, FlatList, Keyboard, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import React , {useState, useEffect} from 'react'
+import Toast from 'react-native-toast-message'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Swipeable } from 'react-native-gesture-handler';
 
 const App = () => {
   const [data, setData] = useState([]);
   const [isShowButtonAdd, setIsShowButtonAdd] = useState(false);
   const [dataName, setDataName] = useState("");
+
+  useEffect(() => {
+    const loadData = async () => {
+      const savedData = await AsyncStorage.getItem("data");
+      try {
+        if(savedData!=null){
+          setData(JSON.parse(savedData));
+        }
+      } catch (error) {
+        setData([]);
+        console.log("error is: ",error);
+      }
+    }
+    loadData();
+  }, []);
+  
+  useEffect(()=>{
+    const saveData = () =>{
+      try {
+        AsyncStorage.setItem("data",JSON.stringify(data));
+      } catch (error) {
+        console.log("error is: ",error);
+      }
+    }
+    saveData();
+  }, [data]);
 
   const handleButtonAdd = () => {
     if(dataName.length<=0){
@@ -16,13 +45,45 @@ const App = () => {
     setData(newData);
     setDataName("");
     setIsShowButtonAdd(!isShowButtonAdd);
+    Keyboard.dismiss();
+    Toast.show({
+      type: 'success',
+      text1: 'Thành công',
+      text2: 'Thêm ghi chú thành công😁',
+      visibilityTime: 3000,
+    });
   }
 
-  const renderItem = ({item}) => {
+  const renderItem = ({item,index}) => {
+    const handleCompelete = () => {
+      const update = [...data];
+      update[index] = {name:item.name,complete:!item.complete};
+      setData(update);
+    }
+    const handleDelete = () => {
+      const update = [...data];
+      update.splice(index,1);
+      setData(update);
+      Toast.show({
+        type: 'success',
+        text1: 'Thành công',
+        text2: 'Xóa ghi chú thành công😁',
+        visibilityTime: 3000,
+      });
+    }
+    const renderRightActions = () => {
+      return (
+        <TouchableOpacity style={styles.deleteButton} onPress={()=>handleDelete()}>
+          <Text style={styles.deleteButtonName}>Xóa</Text>
+        </TouchableOpacity>
+      );
+    };
     return(
-      <TouchableOpacity>
-        <Text>{item.name}</Text>
-      </TouchableOpacity>
+      <Swipeable renderRightActions={renderRightActions}>
+        <TouchableOpacity style={styles.itemBody} onPress={()=>handleCompelete()}>
+          <Text style={item.complete ? styles.itemNameComplete : styles.itemNameNormal}>{item.name}</Text>
+        </TouchableOpacity>
+      </Swipeable>
     )
   }
   return (
@@ -32,7 +93,7 @@ const App = () => {
       <FlatList
         data={data}
         renderItem={renderItem}
-        keyExtractor={(item,index)=>index.toString()}
+        keyExtractor={(item, index)=>index.toString()}
       />
       <TouchableOpacity style={styles.buttonAddContainer} onPress={()=>setIsShowButtonAdd(!isShowButtonAdd)}>
         <Text style={styles.buttonAddContent}>+</Text>
@@ -41,15 +102,18 @@ const App = () => {
         visible={isShowButtonAdd}
         transparent={true}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={[styles.title,{color: "#343640",fontSize: 40}]}>Thêm Ghi Chú</Text>
-            <View style={[styles.bottomLine,{borderColor: "#343640"}]}></View>
-            <TextInput value={dataName} placeholder='Vui lòng nhập ghi chú.....' style={styles.write} onChangeText={text=>setDataName(text)}/>
-            <Button title='Thêm' onPress={()=>handleButtonAdd()}/>
+        {isShowButtonAdd && (
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={[styles.title,{color: "#343640",fontSize: 40}]}>Thêm Ghi Chú</Text>
+              <View style={[styles.bottomLine,{borderColor: "#343640"}]}></View>
+              <TextInput value={dataName} placeholder='Vui lòng nhập ghi chú.....' style={styles.write} onChangeText={text=>setDataName(text)}/>
+              <Button title='Thêm' onPress={()=>handleButtonAdd()}/>
+            </View>
           </View>
-        </View>
+        )}
       </Modal>
+      <Toast />
     </SafeAreaView>
   )
 }
@@ -109,5 +173,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderWidth: 2,
     color: "#343640",
-  }
+  },
+  itemBody:{
+    backgroundColor: "#444654",
+    padding: 8,
+    flexDirection: "row",
+    maxHeight: 70,
+    minHeight: 70,
+    marginBottom: 8,
+  },
+  itemNameNormal:{
+    width: "80%",
+    marginRight: 20,
+    textAlignVertical: "center",
+    fontSize: 25,
+    color: "#ffffff",
+    textDecorationLine: "none",
+  },
+  itemNameComplete:{
+    width: "80%",
+    marginRight: 20,
+    textAlignVertical: "center",
+    fontSize: 25,
+    color: "#ffffff",
+    textDecorationLine: "line-through",
+  },
+  deleteButton: {
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: 70,
+  },
+  deleteButtonName:{
+    color: "#ffffff",
+    fontSize: 20,
+    fontWeight: "bold",
+  }, 
 })
